@@ -28,7 +28,7 @@ Version 1.5:
 
 - Added Possibility to Change the Auto-Save Interval
 
-NOTE: Crashes at the End of Encrypting Process, please usw a newer Version
+NOTE: Crashes at the End of Encrypting Process, please use a newer Version
 
 
 
