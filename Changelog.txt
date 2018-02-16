@@ -39,3 +39,12 @@ Version 1.6:
 - Uploaded Source on GitHub
 
 - Did Some small improvement
+
+Version 1.7:
+- Did much work on multi-threading
+- Added possibility to enable/disable multi-threading
+- Documented source code
+- Updated download link for installer
+- Added a class for encryption thread
+- Put resources into a 'resources' package
+- Little fixes and improvements :)

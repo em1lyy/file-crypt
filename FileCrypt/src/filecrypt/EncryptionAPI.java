@@ -12,10 +12,12 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
+// Simple API for RSA encryption
 public class EncryptionAPI {
 	
 	public static KeyPair key;
 	
+	// Method to generate a keypair with a specific length
 	public static void gen(int length)
 	{
 		KeyPairGenerator keygen = null;
@@ -30,6 +32,7 @@ public class EncryptionAPI {
 		key = keygen.generateKeyPair();
 	}
 	
+	// Method to encrypt a message using rsa
 	public static byte[] encrypt(String message, PublicKey pk)
 	{
 		Cipher cipher = null;
@@ -62,6 +65,7 @@ public class EncryptionAPI {
 		return chiffrat;
 	}
 	
+	// (UNUSED) Method to decrypt a message using rsa
 	public static String decrypt(byte[] chiffrat, PrivateKey sk)
 	{
 		byte[] dec = null;
