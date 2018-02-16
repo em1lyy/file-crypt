@@ -7,6 +7,7 @@ How it works:
 It encrypts a specific File with RSA Cipher and deletes the Encryption key afterwards, so restoring the File
 from the NTFS-Index is completely useless.
 
-DOWNLOAD LINK FOR INSTALLER:
+DOWNLOAD LINK FOR INSTALLER (Version 1.7):
 
-https://mega.nz/#!UqAyXLDK!PPqCoPa9Cq8KyzQCe7OoE49m4ZnxGN4DI75XGAV-7zY
+https://mega.nz/#!5zxyEBIJ!53CW8cziX0vQNUs8cF1cXkHz9DJxCu0YERzcoLzOUc8
+
