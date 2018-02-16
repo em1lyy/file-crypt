@@ -10,4 +10,3 @@ from the NTFS-Index is completely useless.
 DOWNLOAD LINK FOR INSTALLER (Version 1.7):
 
 https://mega.nz/#!5zxyEBIJ!53CW8cziX0vQNUs8cF1cXkHz9DJxCu0YERzcoLzOUc8
-

@@ -7,11 +7,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
+// Simple file reading/writing API
 public class FileAPI {
 	
-	//public static BufferedWriter out = null;
 	public static BufferedReader in = null;
 	
+	// Method to read Files
 	public static String[] readFile(File file) {
 		String currLine;
 		ArrayList<String> linesTEMP = new ArrayList<String>();
@@ -39,6 +40,7 @@ public class FileAPI {
 		return lines;
 	}
 	
+	// Method to write to Files
 	public static void writeFile(File file, String[] msg, BufferedWriter out) {
 		
 		try {
