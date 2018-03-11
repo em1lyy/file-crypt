@@ -2,7 +2,8 @@
 
 Version 1.8:
 - Fix ALL bugs
-- Make better GUI
 - Figure out why GPU is that overloaded (50%-65% with GTX 1080 8GB OverClocked)
 - Maybe add Hardware acceleration
 - Remove Out-of-Order Writing
+- Implement FCRSA 1.0
+- Make Thread that controls every other Thread except the Main Thread
