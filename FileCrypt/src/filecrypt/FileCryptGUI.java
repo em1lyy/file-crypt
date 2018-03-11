@@ -359,7 +359,8 @@ public class FileCryptGUI extends JFrame {
 		});
 		// Start encrypting!!
 		t.start();
-		while(!t.isAlive()) {
+		// Wait for Encryption Host thread to die (Check twice a second)
+		while(t.isAlive()) {
 			try {
 				Thread.sleep(500L);
 			} catch (InterruptedException e) {
