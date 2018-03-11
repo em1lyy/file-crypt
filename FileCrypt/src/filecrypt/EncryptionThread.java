@@ -1,5 +1,7 @@
 package filecrypt;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 
@@ -8,12 +10,12 @@ public class EncryptionThread extends Thread {
 	
 	// Some variables
 	String[] input;
-	String[] output;
+	BufferedWriter output;
 	int index;
 	KeyPair key;
 	
 	// Constructor
-	public EncryptionThread(String[] input, String[] output, int index, boolean highPriority, KeyPair key) {
+	public EncryptionThread(String[] input, BufferedWriter output, int index, boolean highPriority, KeyPair key) {
 		this.input = input;
 		this.output = output;
 		this.index = index;
@@ -29,7 +31,12 @@ public class EncryptionThread extends Thread {
 		
 		String in = this.input[this.index];
 		String out = encrypt(in, this.key.getPublic());
-		this.output[this.index] = out;
+		try {
+			output.write(out);
+			output.newLine();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
 		
 	}
 	

@@ -31,8 +31,9 @@ public class FileCryptGUI extends JFrame {
 	private JPanel contentPane;
 	private JTextField txtFilePath;
 	
-	// The File that has been selected by the user
+	// The File that has been selected by the user and the output BufferedWriter
 	private File currentFile = null;
+	private BufferedWriter out = null;
 	
 	// Some components that are needed in other Events
 	private JLabel lblCurrentOperation;
@@ -218,7 +219,7 @@ public class FileCryptGUI extends JFrame {
 			}
 		});
 		chckbxUseMultithreading.setFont(new Font("Tahoma", Font.PLAIN, 10));
-		chckbxUseMultithreading.setBounds(202, 0, 127, 23);
+		chckbxUseMultithreading.setBounds(191, 0, 127, 23);
 		contentPane.add(chckbxUseMultithreading);
 		
 		// Checkbox for High-Priority-Encryption (More efficient) !! Single thread always has highest priority !! 
@@ -226,7 +227,7 @@ public class FileCryptGUI extends JFrame {
 		chckbxHighpriorityEncrypting.setToolTipText("Decide if the encryption threads will get high or normal priority");
 		chckbxHighpriorityEncrypting.setEnabled(false);
 		chckbxHighpriorityEncrypting.setFont(new Font("Tahoma", Font.PLAIN, 10));
-		chckbxHighpriorityEncrypting.setBounds(63, 0, 137, 23);
+		chckbxHighpriorityEncrypting.setBounds(52, 0, 137, 23);
 		contentPane.add(chckbxHighpriorityEncrypting);
 	}
 	
@@ -304,6 +305,7 @@ public class FileCryptGUI extends JFrame {
 		t.start();
 	}
 	
+	// Method to encrypt with multiple threads
 	private void encryptMultiThreaded() {
 		Thread t = new Thread( new Runnable() {
 			
@@ -313,37 +315,29 @@ public class FileCryptGUI extends JFrame {
 					// Generating RSA key
 					lblOperations.setText("Generating key...");
 					EncryptionAPI.gen(keyLength);
-					// Initializing String arrays
+					// Initializing String array
 					lblOperations.setText("Reading File...");
 					String[] msgDECRYPTED = FileAPI.readFile(currentFile);
 					lblOperations.setText("Initializing encryption...");
-					String[] msgENCRYPTED = new String[saveInterval];
-					// Creating a BufferedWriter
-					BufferedWriter out = null;
+					// Initializing BufferedWriter
 					try {
 						out = new BufferedWriter(new FileWriter(currentFile));
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
-					int index = 0;
 					for (int i = 0; i < msgDECRYPTED.length; i++) {
-						// If save interval is reached, pre-save the file
-						if (index >= saveInterval) {
-							lblOperations.setText("Writing encrypted data to File...");
-							FileAPI.writeFile(currentFile, msgENCRYPTED, out);
-							lblOperations.setText("Clearing Cache...");
-							msgENCRYPTED = new String[saveInterval];
-							index = 0;
-						}
 						lblOperations.setText("Starting encryption thread " + (i + 1) + " of " + msgDECRYPTED.length + "...");
 						// Creating and starting a new encryption thread (Further details in EncryptionThread.java)
-						EncryptionThread et = new EncryptionThread(msgDECRYPTED, msgDECRYPTED, i, true, EncryptionAPI.key);
+						EncryptionThread et = new EncryptionThread(msgDECRYPTED, out, i, true, EncryptionAPI.key);
 						et.start();
-						index++;
+						// Waits for Thread to die so checking for final thread end is possible
+						try {
+							et.join();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
 					}
 					lblOperations.setText("Writing encrypted data to File...");
-					// Writing last lines
-					FileAPI.writeFile(currentFile, msgENCRYPTED, out);
 					// If delete checkbox is selected, delete the File
 					if (chckbxDeleteAfterEncrypting.isSelected()) {
 						lblOperations.setText("Deleting File...");
@@ -352,17 +346,8 @@ public class FileCryptGUI extends JFrame {
 							JOptionPane.showMessageDialog(null, "ERROR: Deleting failed!");
 						}
 					}
-					// Close BufferedWriter if it isn't null
-					if (out != null) {
-						try {
-							out.close();
-						} catch (IOException ex) {
-							ex.printStackTrace();
-						}
-					}
 					// Reset the ArrayLists (RAM Optimization)
 					msgDECRYPTED = null;
-					msgENCRYPTED = null;
 					lblOperations.setText("Finished!");
 					JOptionPane.showMessageDialog(null, "Encrypting finished!");
 					btnEncrypt.setEnabled(true);
@@ -374,5 +359,23 @@ public class FileCryptGUI extends JFrame {
 		});
 		// Start encrypting!!
 		t.start();
+		// Wait for Encryption Host thread to die (Check twice a second)
+		while(t.isAlive()) {
+			try {
+				Thread.sleep(500L);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		// Close BufferedWriter if it isn't null
+		if (out != null) {
+			try {
+				out.flush();
+				out.close();
+				out = null;
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+		}
 	}
 }

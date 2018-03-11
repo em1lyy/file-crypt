@@ -48,3 +48,8 @@ Version 1.7:
 - Added a class for encryption thread
 - Put resources into a 'resources' package
 - Little fixes and improvements :)
+
+Version 1.7.6:
+- Fixed multi-threading errors on slow PC's
+- Fixed GUI Look
+- Updated DL Link for installer
