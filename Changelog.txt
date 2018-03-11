@@ -5,9 +5,7 @@
 Version 1.0:
 
 - First Software Release
-
 - Encrypting Concept finished
-
 - File Selection Concept finished
 
 
@@ -15,9 +13,7 @@ Version 1.0:
 Version 1.4:
 
 - Added Possibility to change RSA key length
-
 - Added Possibility to Auto-Delete Files After Encrypting 
-
 - Prevents User from Clicking "Encrypt!" Again while encryption process is running
 
 
@@ -25,9 +21,7 @@ Version 1.4:
 Version 1.5:
 
 - Added Auto-Save while Encrypting to reduce RAM usage 
-
 - Added Possibility to Change the Auto-Save Interval
-
 NOTE: Crashes at the End of Encrypting Process, please use a newer Version
 
 
@@ -35,12 +29,11 @@ NOTE: Crashes at the End of Encrypting Process, please use a newer Version
 Version 1.6:
 
 - Fixed 1.5 Auto-Save crash bug
-
 - Uploaded Source on GitHub
-
 - Did Some small improvement
 
 Version 1.7:
+
 - Did much work on multi-threading
 - Added possibility to enable/disable multi-threading
 - Documented source code
@@ -50,6 +43,7 @@ Version 1.7:
 - Little fixes and improvements :)
 
 Version 1.7.6:
+
 - Fixed multi-threading errors on slow PC's
 - Fixed GUI Look
 - Updated DL Link for installer
