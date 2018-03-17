@@ -32,8 +32,8 @@ public class EncryptionAPI {
 		key = keygen.generateKeyPair();
 	}
 	
-	// Method to encrypt a message using rsa
-	public static byte[] encrypt(String message, PublicKey pk)
+	// Method to encrypt a message using RSA
+	public static byte[] encrypt(String message, PublicKey pk, int lineIndex, boolean useThreadHostThread, ThreadHostThread threadHostThread)
 	{
 		Cipher cipher = null;
 		try
@@ -57,15 +57,18 @@ public class EncryptionAPI {
 		} catch (IllegalBlockSizeException | BadPaddingException e)
 		{
 			e.printStackTrace();
-			chiffrat = new byte[3];
-			chiffrat[1] = 1;
-			chiffrat[0] = 25;
-			chiffrat[2] = 52;
+			if (useThreadHostThread) {
+				threadHostThread.addFailedLine(lineIndex);
+			} else {
+				FileCryptGUI.failedLines[FileCryptGUI.failedLinesArrayIndex] = lineIndex;
+				FileCryptGUI.failedLinesArrayIndex += 1;
+			}
+			chiffrat = message.getBytes();
 		}
 		return chiffrat;
 	}
 	
-	// (UNUSED) Method to decrypt a message using rsa
+	// Method to decrypt a message using RSA
 	public static String decrypt(byte[] chiffrat, PrivateKey sk)
 	{
 		byte[] dec = null;

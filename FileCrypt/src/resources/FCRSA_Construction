@@ -1,0 +1,7 @@
+#FILETYPE FCRSA
+#KEYLENGTH {KeyLength}
+#PUBLIC {PublicKey}
+#PRIVATE {PrivateKey}
+#FAILEDLINES [FailedLines]
+###TEXT###
+{ENCRYPTED TEXT}

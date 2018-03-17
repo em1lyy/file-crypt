@@ -54,6 +54,11 @@ public class FileCryptGUI extends JFrame {
 	private int[] intervals = { 500, 750, 1000, 2500 };
 	private int intervalIndex = 2;
 	
+	// Failed lines
+	public static int[] failedLines;
+	public static int failedLinesArrayIndex = 0;
+	private JCheckBox chckbxDecryptable;
+	
 	/**
 	 * Launch the application.
 	 */
@@ -85,8 +90,7 @@ public class FileCryptGUI extends JFrame {
 		setResizable(false);
 		setIconImage(Toolkit.getDefaultToolkit().getImage(FileCryptGUI.class.getResource("/resources/filecrypt_icon.png")));
 		setTitle("FileCrypt");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 450, 207);
+		setBounds(100, 100, 450, 262);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		contentPane.setLayout(null);
@@ -166,7 +170,7 @@ public class FileCryptGUI extends JFrame {
 		
 		// Label that says key length
 		JLabel lblKeyLength = new JLabel("Key length:");
-		lblKeyLength.setBounds(11, 150, 61, 14);
+		lblKeyLength.setBounds(10, 203, 61, 14);
 		contentPane.add(lblKeyLength);
 		
 		// Button to change the key length
@@ -184,7 +188,7 @@ public class FileCryptGUI extends JFrame {
 			}
 		});
 		btnBits.setForeground((new Color(50, 205, 50)));
-		btnBits.setBounds(68, 146, 87, 23);
+		btnBits.setBounds(67, 199, 87, 23);
 		contentPane.add(btnBits);
 		
 		// Button to change the saving interval
@@ -200,12 +204,12 @@ public class FileCryptGUI extends JFrame {
 				btnLines.setText(saveInterval + " Lines");
 			}
 		});
-		btnLines.setBounds(335, 146, 89, 23);
+		btnLines.setBounds(334, 199, 89, 23);
 		contentPane.add(btnLines);
 		
 		// Label that says Save interval
 		JLabel lblSaveInterval = new JLabel("Save interval:");
-		lblSaveInterval.setBounds(267, 150, 71, 14);
+		lblSaveInterval.setBounds(266, 203, 71, 14);
 		contentPane.add(lblSaveInterval);
 		
 		// Checkbox for using multi-threading
@@ -229,6 +233,22 @@ public class FileCryptGUI extends JFrame {
 		chckbxHighpriorityEncrypting.setFont(new Font("Tahoma", Font.PLAIN, 10));
 		chckbxHighpriorityEncrypting.setBounds(52, 0, 137, 23);
 		contentPane.add(chckbxHighpriorityEncrypting);
+		
+		chckbxDecryptable = new JCheckBox("Decryptable");
+		chckbxDecryptable.setToolTipText("Decide if the File is decryptable later using FCRSA");
+		chckbxDecryptable.setBounds(160, 199, 97, 23);
+		contentPane.add(chckbxDecryptable);
+		
+		JButton btnDecrypt = new JButton("DECRYPT!");
+		btnDecrypt.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				
+			}
+		});
+		btnDecrypt.setToolTipText("Start decrypting/restoring the File.");
+		btnDecrypt.setFont(new Font("Tahoma", Font.PLAIN, 40));
+		btnDecrypt.setBounds(10, 139, 414, 53);
+		contentPane.add(btnDecrypt);
 	}
 	
 	// Method to encrypt with a single thread
@@ -244,6 +264,7 @@ public class FileCryptGUI extends JFrame {
 					// Initializing String arrays
 					lblOperations.setText("Reading File...");
 					String[] msgDECRYPTED = FileAPI.readFile(currentFile);
+					failedLines = new int[msgDECRYPTED.length];
 					lblOperations.setText("Initializing encryption...");
 					String[] msgENCRYPTED = new String[saveInterval];
 					// Creating a BufferedWriter
@@ -254,6 +275,33 @@ public class FileCryptGUI extends JFrame {
 						e.printStackTrace();
 					}
 					int index = 0;
+					// Do some FCRSA stuff
+					try {
+						out.write("#FILETYPE FCRSA");
+						out.newLine();
+						out.write("#KEYLENGTH " + keyLength);
+						out.newLine();
+						out.write("#PUBLIC " + EncryptionAPI.key.getPublic().toString());
+						out.newLine();
+						if (chckbxDecryptable.isSelected()) {
+							out.write("#PRIVATE " + EncryptionAPI.key.getPrivate().toString());
+							out.newLine();
+						} else {
+							out.write("#PRIVATE NULL");
+							out.newLine();
+						}
+						if(!failedLines.toString().equalsIgnoreCase("[]")) {
+							out.write("#FAILEDLINES " + failedLines.toString());
+							out.newLine();
+						} else {
+							out.write("#FAILEDLINES NULL");
+							out.newLine();
+						}
+						out.write("###TEXT###");
+						out.newLine();
+					} catch (IOException e) {
+						JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(), "FileCrypt", JOptionPane.ERROR_MESSAGE);
+					}
 					for (int i = 0; i < msgDECRYPTED.length; i++) {
 						// If save interval is reached, pre-save the file
 						if (index >= saveInterval) {
@@ -265,7 +313,7 @@ public class FileCryptGUI extends JFrame {
 						}
 						lblOperations.setText("Encrypting line " + (i + 1) + " of " + msgDECRYPTED.length + "...");
 						// Encrypt directly from EncryptionAPI class
-						msgENCRYPTED[index] = new String(EncryptionAPI.encrypt(msgDECRYPTED[i], EncryptionAPI.key.getPublic()));
+						msgENCRYPTED[index] = new String(EncryptionAPI.encrypt(msgDECRYPTED[i], EncryptionAPI.key.getPublic(), i, false, null));
 						index++;
 					}
 					lblOperations.setText("Writing encrypted data to File...");
@@ -325,19 +373,27 @@ public class FileCryptGUI extends JFrame {
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
-					for (int i = 0; i < msgDECRYPTED.length; i++) {
-						lblOperations.setText("Starting encryption thread " + (i + 1) + " of " + msgDECRYPTED.length + "...");
-						// Creating and starting a new encryption thread (Further details in EncryptionThread.java)
-						EncryptionThread et = new EncryptionThread(msgDECRYPTED, out, i, true, EncryptionAPI.key);
-						et.start();
-						// Waits for Thread to die so checking for final thread end is possible
+					lblOperations.setText("Starting encryption thread host...");
+					// Creating and starting the Encryption thread host.
+					ThreadHostThread tht = new ThreadHostThread(msgDECRYPTED, EncryptionAPI.key, chckbxHighpriorityEncrypting.isSelected(), keyLength, false);
+					tht.start();
+					while(tht.isAlive()) {
 						try {
-							et.join();
+							Thread.sleep(500L);
 						} catch (InterruptedException e) {
-							e.printStackTrace();
+							JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(), "FileCrypt", JOptionPane.ERROR_MESSAGE);
 						}
 					}
+					tht.__finalize__();
+					failedLines = tht.getFailedLines();
 					lblOperations.setText("Writing encrypted data to File...");
+					WritingThread wt = new WritingThread(tht.getFinalOutput(), out, chckbxHighpriorityEncrypting.isSelected(), EncryptionAPI.key, keyLength, chckbxDecryptable.isSelected(), failedLines);
+					wt.start();
+					try {
+						wt.join();
+					} catch (InterruptedException e) {
+						JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(), "FileCrypt", JOptionPane.ERROR_MESSAGE);
+					}
 					// If delete checkbox is selected, delete the File
 					if (chckbxDeleteAfterEncrypting.isSelected()) {
 						lblOperations.setText("Deleting File...");
@@ -351,7 +407,7 @@ public class FileCryptGUI extends JFrame {
 					lblOperations.setText("Finished!");
 					JOptionPane.showMessageDialog(null, "Encrypting finished!");
 					btnEncrypt.setEnabled(true);
-				} else { // If the user didn't select a file, show him/her a dialog which tells him zo select a file
+				} else { // If the user didn't select a file, show him/her a dialog which tells him to select a file
 					JOptionPane.showMessageDialog(null, "Please select a File!");
 					btnEncrypt.setEnabled(true);
 				}
