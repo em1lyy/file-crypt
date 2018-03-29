@@ -6,10 +6,21 @@ import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -42,6 +53,7 @@ public class FileCryptGUI extends JFrame {
 	private JCheckBox chckbxUseMultithreading;
 	private JButton btnEncrypt;
 	private JCheckBox chckbxHighpriorityEncrypting;
+	private JButton btnDecrypt;
 	
 	// Possible key lengths and their colors on the button
 	private int keyLength = 2048;
@@ -136,6 +148,7 @@ public class FileCryptGUI extends JFrame {
 		btnEncrypt.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				btnEncrypt.setEnabled(false);
+				btnDecrypt.setEnabled(false);
 				
 				if (chckbxUseMultithreading.isSelected()) {
 					encryptMultiThreaded();
@@ -239,9 +252,141 @@ public class FileCryptGUI extends JFrame {
 		chckbxDecryptable.setBounds(160, 199, 97, 23);
 		contentPane.add(chckbxDecryptable);
 		
-		JButton btnDecrypt = new JButton("DECRYPT!");
+		btnDecrypt = new JButton("DECRYPT!");
 		btnDecrypt.addActionListener(new ActionListener() {
+			@SuppressWarnings("unused")
 			public void actionPerformed(ActionEvent arg0) {
+				Thread decryptionThread = new Thread(new Runnable() {
+					
+					@Override
+					public void run() {
+						
+						btnDecrypt.setEnabled(false);
+						btnEncrypt.setEnabled(false);
+						BufferedReader in = null;
+						BufferedWriter out = null;
+						try {
+							in = new BufferedReader(new FileReader(currentFile));
+							lblOperations.setText("Checking Filetype...");
+							if (in.readLine().equalsIgnoreCase("#FILETYPE FCRSA")) {
+								lblOperations.setText("Reading public key...");
+								int keyLength = Integer.parseInt(in.readLine().substring(11));
+								String pubKey = in.readLine().substring(8);
+								String line = in.readLine();
+								lblOperations.setText("Reading private key...");
+								if (!line.equalsIgnoreCase("#PRIVATE NULL")) {
+									String privKey = line.substring(9);
+									line = in.readLine();
+									lblOperations.setText("Reading Failed Lines...");
+									if (!line.equalsIgnoreCase("#FAILEDLINES NULL")) {
+										String failedLinesString = line.substring(13, line.length() - 1);
+										String[] failedLinesArrayString = failedLinesString.split(",");
+										int[] failedLines = new int[failedLinesArrayString.length];
+										int index = 0;
+										for (String fLine : failedLinesArrayString) {
+											failedLines[index] = Integer.parseInt(fLine);
+										}
+										lblOperations.setText("Generating private Key...");
+										byte[] encodedPrivateKey = privKey.getBytes();
+										KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+										PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(encodedPrivateKey);
+										PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
+										lblOperations.setText("Generating public Key...");
+										byte[] encodedPublicKey = pubKey.getBytes();
+										keyFactory = KeyFactory.getInstance("RSA");
+										X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(encodedPublicKey);
+										PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
+										EncryptionAPI.key = new KeyPair(publicKey, privateKey);
+										in.readLine();
+										lblOperations.setText("Reading file...");
+										ArrayList<String> lines = new ArrayList<String>();
+										while((line = in.readLine()) != null) {
+											lines.add(line);
+										}
+										String[] linesDecrypted = new String[lines.size()];
+										index = 0;
+										for (String s : lines) {
+											boolean decrypt = true;
+											for (int failLine : failedLines) {
+												if (index == failLine) {
+													decrypt = false;
+													break;
+												}
+											}
+											if (decrypt)
+												linesDecrypted[index] = EncryptionAPI.decrypt(s.getBytes(), privateKey);
+											else
+												linesDecrypted[index] = s;
+											index++;
+										}
+										out = new BufferedWriter(new FileWriter(currentFile));
+										for (String str : linesDecrypted) {
+											out.write(str);
+											out.newLine();
+										}
+									} else {
+										lblOperations.setText("Generating private Key...");
+										byte[] encodedPrivateKey = privKey.getBytes();
+										KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+										PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(encodedPrivateKey);
+										PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
+										byte[] encodedPublicKey = pubKey.getBytes();
+										keyFactory = KeyFactory.getInstance("RSA");
+										lblOperations.setText("Generating public Key...");
+										X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(encodedPublicKey);
+										PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
+										EncryptionAPI.key = new KeyPair(publicKey, privateKey);
+										in.readLine();
+										lblOperations.setText("Reading file...");
+										ArrayList<String> lines = new ArrayList<String>();
+										while((line = in.readLine()) != null) {
+											lines.add(line);
+										}
+										String[] linesDecrypted = new String[lines.size()];
+										int index = 0;
+										for (String s : lines) {
+											lblOperations.setText("Decrypting line " + (index + 1) + " of " + lines.size() + "...");
+											linesDecrypted[index] = EncryptionAPI.decrypt(s.getBytes(), privateKey);
+											index++;
+										}
+										lblOperations.setText("Writing decrypted Data to file...");
+										out = new BufferedWriter(new FileWriter(currentFile));
+										for (String str : linesDecrypted) {
+											out.write(str);
+											out.newLine();
+										}
+									}
+									JOptionPane.showMessageDialog(null, "Decrypting finished!", "FileCrypt", JOptionPane.INFORMATION_MESSAGE);
+								} else {
+									JOptionPane.showMessageDialog(null, "Error: File is not decryptable", "FileCrypt", JOptionPane.ERROR_MESSAGE);
+									return;
+								}
+							} else {
+								JOptionPane.showMessageDialog(null, "Error: File is not FCRSA-encoded", "FileCrypt", JOptionPane.ERROR_MESSAGE);
+								return;
+							}
+						} catch (IOException | InvalidKeySpecException | NoSuchAlgorithmException e) {
+							JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(), "FileCrypt", JOptionPane.ERROR_MESSAGE);
+						} finally {
+							if (in != null) {
+								try {
+									in.close();
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+							}
+							if (out != null) {
+								try {
+									out.close();
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+							}
+						}
+						
+					}
+				});
+				decryptionThread.start();
 				
 			}
 		});
@@ -345,6 +490,7 @@ public class FileCryptGUI extends JFrame {
 					JOptionPane.showMessageDialog(null, "Please select a File!");
 					btnEncrypt.setEnabled(true);
 				}
+				btnDecrypt.setEnabled(true);
 			}
 		});
 		// Give thread the maximal possible priority so single threading is'nt completely crap
@@ -394,19 +540,7 @@ public class FileCryptGUI extends JFrame {
 					} catch (InterruptedException e) {
 						JOptionPane.showMessageDialog(null, "Error: " + e.getMessage(), "FileCrypt", JOptionPane.ERROR_MESSAGE);
 					}
-					// If delete checkbox is selected, delete the File
-					if (chckbxDeleteAfterEncrypting.isSelected()) {
-						lblOperations.setText("Deleting File...");
-						boolean deleted = currentFile.delete();
-						if (deleted == false) {
-							JOptionPane.showMessageDialog(null, "ERROR: Deleting failed!");
-						}
-					}
-					// Reset the ArrayLists (RAM Optimization)
-					msgDECRYPTED = null;
-					lblOperations.setText("Finished!");
-					JOptionPane.showMessageDialog(null, "Encrypting finished!");
-					btnEncrypt.setEnabled(true);
+					
 				} else { // If the user didn't select a file, show him/her a dialog which tells him to select a file
 					JOptionPane.showMessageDialog(null, "Please select a File!");
 					btnEncrypt.setEnabled(true);
@@ -423,6 +557,18 @@ public class FileCryptGUI extends JFrame {
 				e.printStackTrace();
 			}
 		}
+		// If delete checkbox is selected, delete the File
+		if (chckbxDeleteAfterEncrypting.isSelected()) {
+			lblOperations.setText("Deleting File...");
+			boolean deleted = currentFile.delete();
+			if (deleted == false) {
+				JOptionPane.showMessageDialog(null, "ERROR: Deleting failed!");
+			}
+		}
+		lblOperations.setText("Finished!");
+		JOptionPane.showMessageDialog(null, "Encrypting finished!");
+		btnEncrypt.setEnabled(true);
+		btnDecrypt.setEnabled(true);
 		// Close BufferedWriter if it isn't null
 		if (out != null) {
 			try {

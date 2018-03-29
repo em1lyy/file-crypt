@@ -3,6 +3,10 @@ package filecrypt;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 
 import javax.swing.JOptionPane;
 
@@ -38,17 +42,25 @@ public class WritingThread extends Thread {
 			out.newLine();
 			out.write("#KEYLENGTH " + this.keyLength);
 			out.newLine();
-			out.write("#PUBLIC " + key.getPublic().toString());
+			PrivateKey privateKey = key.getPrivate();
+			PublicKey publicKey = key.getPublic();
+			X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(publicKey.getEncoded());
+			out.write("#PUBLIC " + x509EncodedKeySpec.getEncoded());
 			out.newLine();
 			if (decryptable) {
-				out.write("#PRIVATE " + key.getPrivate().toString());
+				PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(privateKey.getEncoded());
+				out.write("#PRIVATE " + pkcs8EncodedKeySpec.getEncoded());
 				out.newLine();
 			} else {
 				out.write("#PRIVATE NULL");
 				out.newLine();
 			}
-			if(!failedLines.toString().equalsIgnoreCase("[]")) {
-				out.write("#FAILEDLINES " + failedLines.toString());
+			String arrayString = "[";
+			for (int i : failedLines)
+				arrayString += String.valueOf(failedLines[i]) + ",";
+			arrayString += "]";
+			if(!arrayString.equalsIgnoreCase("[]")) {
+				out.write("#FAILEDLINES " + arrayString);
 				out.newLine();
 			} else {
 				out.write("#FAILEDLINES NULL");
